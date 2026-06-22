@@ -1,4 +1,5 @@
 name: TWRP 16 Builder
+
 on:
   workflow_dispatch:
     inputs:
@@ -19,65 +20,65 @@ on:
         default: NX809J
         required: true
       LUNCH_TARGET:
-        description: Lunch suffix after twrp_
+        description: Lunch twrp_
         default: NX809J-bp2a-eng
         required: true
       BUILD_PARTITION:
         description: Build target without image suffix
         default: recovery
         required: true
+
 permissions:
   contents: write
-env:
-  CCACHE_MAXSIZE: 10G
+
 jobs:
   build:
     runs-on: ubuntu-24.04
     timeout-minutes: 360
+
     steps:
       - name: Show build info
         run: |
           echo "Device path: device/${{ github.event.inputs.DEVICE_PATH }}"
           echo "Lunch: twrp_${{ github.event.inputs.LUNCH_TARGET }}"
           echo "Build target: ${{ github.event.inputs.BUILD_PARTITION }}image"
-          echo "CPU cores: $(nproc) (full threads)"
-          echo "CCache: enabled (10G, compressed)"
-          echo "Missing dependencies: allowed"
           echo "Run: ${{ github.run_id }}"
           df -h
-          free -h
-      - name: Maximize disk space
-        uses: easimon/maximize-build-space@master
-        with:
-          root-reserve-mb: 512
-          swap-size-mb: 1024
-          remove-dotnet: 'true'
-          remove-android: 'true'
-          remove-haskell: 'true'
-          remove-codeql: 'true'
-          remove-docker-images: 'true'
-      - name: Cleanup extra files
-        uses: rokibhasansagar/slimhub_actions@main
-      - name: Setup CCache
-        uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          key: twrp-${{ github.event.inputs.DEVICE_NAME }}-${{ github.event.inputs.TWRP_MANIFEST_BRANCH }}
-          max-size: 10G
-          create-symlink: false
-      - name: Configure CCache for AOSP
+
+      - name: Cleanup
         run: |
-          ccache -o compression=true
-          ccache -o compression_level=5
-          ccache -o "sloppiness=file_macro,time_macros,include_file_mtime,include_file_ctime,pch_defines,locale"
-          ccache -o compiler_check=content
-          ccache -o hash_dir=false
-          ccache -o direct_mode=true
-          ccache -o depend_mode=true
-          ccache -o hard_link=false
-          echo "=== ccache 配置 ==="
-          ccache -p
-          echo "=== ccache 初始统计 ==="
-          ccache -s
+          sudo rm -rf \
+            /opt/hostedtoolcache \
+            /usr/local/lib/android \
+            /usr/share/dotnet \
+            /usr/share/swift \
+            /usr/local/.ghcup \
+            /usr/local/share/boost \
+            /usr/local/share/powershell \
+            /usr/local/lib/node_modules \
+            /usr/share/google-cloud-sdk \
+            /usr/lib/jvm \
+            /opt/az \
+            /opt/microsoft \
+            /opt/pipx \
+            /usr/local/share/chromium \
+            /usr/local/share/edge_driver \
+            /usr/local/share/gecko_driver \
+            /usr/local/share/phantomjs \
+            /usr/local/share/selenium \
+            /var/lib/gems \
+            /var/cache/apt \
+            "$HOME/.cache"
+          docker system prune -af || true
+          df -h
+          root_size_gb="$(df -BG / | awk 'NR==2 {gsub("G","",$2); print $2}')"
+          root_avail_gb="$(df -BG / | awk 'NR==2 {gsub("G","",$4); print $4}')"
+          if [ "${root_size_gb}" -lt 120 ]; then
+            echo "Runner root filesystem is too small for this TWRP build: ${root_size_gb}G total, ${root_avail_gb}G available."
+            echo "Re-run the workflow until GitHub assigns a 145G runner."
+            exit 1
+          fi
+
       - name: Install packages
         run: |
           sudo apt-get update
@@ -86,42 +87,30 @@ jobs:
             git gnupg gperf imagemagick lib32ncurses-dev lib32readline-dev \
             lib32z1-dev libelf-dev liblz4-tool libncurses-dev libsdl1.2-dev \
             libssl-dev libxml2 libxml2-utils lzop pngcrush python3 rsync \
-            schedtool squashfs-tools xsltproc zip zlib1g-dev \
-            linux-modules-extra-$(uname -r) zram-tools
+            schedtool squashfs-tools xsltproc zip zlib1g-dev
           mkdir -p "$HOME/bin"
           curl -fsSL https://storage.googleapis.com/git-repo-downloads/repo > "$HOME/bin/repo"
           chmod a+x "$HOME/bin/repo"
           echo "$HOME/bin" >> "$GITHUB_PATH"
-      - name: Setup swap fallback
+
+      - name: Setup swap
         run: |
           sudo swapoff -a || true
-          sudo fallocate -l 16G /swapfile
+          sudo fallocate -l 24G /swapfile
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile
-          sudo swapon -p 100 /swapfile
-          echo "File swap created (priority 100):"
-          swapon --show
+          sudo swapon /swapfile
           free -h
-      - name: Setup ZRAM compressed swap
-        run: |
-          sudo modprobe zram
-          sudo sed -i 's/^#PERCENT=50/PERCENT=90/' /etc/default/zramswap
-          sudo sed -i 's/^#PRIORITY=100/PRIORITY=1000/' /etc/default/zramswap
-          sudo systemctl restart zramswap
-          echo "ZRAM status (priority 1000, 优先使用):"
-          zramctl
-          echo "Total memory + swap:"
-          free -h
+          swapon --show || true
+          df -h
+
       - name: Sync source
         run: |
           set -e
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-          git config --global pack.windowMemory "256m"
-          git config --global pack.packSizeLimit "256m"
-          git config --global core.deltaBaseCacheLimit "128m"
           repo init --depth=1 -u "${{ github.event.inputs.TWRP_MANIFEST_URL }}" -b "${{ github.event.inputs.TWRP_MANIFEST_BRANCH }}"
-          repo sync -c --force-sync --no-clone-bundle --no-tags -j1 &
+          repo sync -c --force-sync --no-clone-bundle --no-tags -j4 &
           sync_pid=$!
           (
             while kill -0 "${sync_pid}" 2>/dev/null; do
@@ -137,8 +126,7 @@ jobs:
           wait "${heartbeat_pid}" 2>/dev/null || true
           set -e
           test "${sync_status}" -eq 0
-          echo "Source sync completed"
-          df -h
+
       - name: Restore wpa_supplicant source
         run: |
           set -e
@@ -149,11 +137,13 @@ jobs:
           fi
           python3 - <<'PY'
           from pathlib import Path
+
           bp = Path("external/wpa_supplicant_8/wpa_supplicant/Android.bp")
           text = bp.read_text()
           marker = "wpa_supplicant_recovery"
           if marker not in text:
               text += r'''
+
           cc_binary {
               name: "wpa_cli_recovery",
               recovery: true,
@@ -176,6 +166,7 @@ jobs:
                   "wpa_supplicant_includes_default",
               ],
           }
+
           cc_binary {
               name: "wpa_supplicant_recovery",
               recovery: true,
@@ -196,19 +187,19 @@ jobs:
           }
           '''
               bp.write_text(text)
-              print("wpa_supplicant recovery patch applied")
-          else:
-              print("wpa_supplicant recovery patch already exists, skipping")
           PY
+
       - name: Check out device tree
         uses: actions/checkout@v4
         with:
           path: device/${{ github.event.inputs.DEVICE_PATH }}
+
       - name: Patch recovery touch input for NX809J
         run: |
           set -e
           python3 - <<'PY'
           from pathlib import Path
+
           events = Path("bootable/recovery/minuitwrp/events.cpp")
           text = events.read_text()
           old_key_block = (
@@ -249,13 +240,14 @@ jobs:
               raise SystemExit("events.cpp touch scale block not found")
           text = text.replace(old_scale_block, new_scale_block)
           events.write_text(text)
-          print("Touch input patch applied")
           PY
+
       - name: Patch recovery haptics for NX809J
         run: |
           set -e
           python3 - <<'PY'
           from pathlib import Path
+
           events = Path("bootable/recovery/minuitwrp/events.cpp")
           text = events.read_text()
           old = (
@@ -269,47 +261,29 @@ jobs:
           if old not in text:
               raise SystemExit("events.cpp LED haptics path block not found")
           events.write_text(text.replace(old, new))
-          print("Haptics path patch applied")
           PY
+
       - name: Build TWRP
         run: |
           set -e
           mkdir -p artifacts
-          BUILD_JOBS=$(nproc)
-          echo "CPU cores: $(nproc), build threads: $BUILD_JOBS"
-          export USE_CCACHE=1
-          export CCACHE_EXEC=$(command -v ccache)
-          export CCACHE_MAXSIZE=10G
-          export CC_WRAPPER="$(command -v ccache)"
-          export CXX_WRAPPER="$(command -v ccache)"
-          echo "CCache enabled, dir: $CCACHE_DIR"
-          echo "=== 构建前 ccache 统计 ==="
-          ccache -s
-          export ALLOW_MISSING_DEPENDENCIES=true
-          echo "Missing dependencies allowed"
+          export USE_CCACHE=0
+          export SOONG_UI_NINJA_ARGS="-j4"
           source build/envsetup.sh
           lunch "twrp_${{ github.event.inputs.LUNCH_TARGET }}"
-          echo "========================================"
-          echo "  Starting TWRP build"
-          echo "  Threads: $BUILD_JOBS"
-          echo "  Target: ${{ github.event.inputs.BUILD_PARTITION }}image"
-          echo "========================================"
           {
             echo "Disk before build:"
             df -h
             echo "Memory before build:"
             free -h
-            m -j$BUILD_JOBS "${{ github.event.inputs.BUILD_PARTITION }}image" &
+            m -j1 "${{ github.event.inputs.BUILD_PARTITION }}image" &
             build_pid=$!
             (
               while kill -0 "${build_pid}" 2>/dev/null; do
-                echo "--- Build heartbeat at $(date -u +%Y-%m-%dT%H:%M:%SZ) ---"
+                echo "Build heartbeat at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
                 ps -o pid,ppid,etime,%cpu,%mem,rss,cmd -p "${build_pid}" || true
                 free -h || true
                 df -h / || true
-                echo "--- ccache stats ---"
-                ccache -s 2>/dev/null | head -15 || true
-                echo "--- end heartbeat ---"
                 sleep 60
               done
             ) &
@@ -317,55 +291,35 @@ jobs:
             set +e
             wait "${build_pid}"
             build_status=$?
-            set -e
             kill "${heartbeat_pid}" 2>/dev/null || true
             wait "${heartbeat_pid}" 2>/dev/null || true
+            set -e
+            test "${build_status}" -eq 0
             echo "Disk after build:"
             df -h
             echo "Memory after build:"
             free -h
-            test "${build_status}" -eq 0
           } 2>&1 | tee artifacts/build.log
           test "${PIPESTATUS[0]}" -eq 0
-          echo "=== 构建后 ccache 统计 ==="
-          ccache -s
-          IMG_PATH="out/target/product/${{ github.event.inputs.DEVICE_NAME }}/${{ github.event.inputs.BUILD_PARTITION }}.img"
-          OUTPUT_NAME="TWRP-3.7.1-16-${{ github.event.inputs.DEVICE_NAME }}-${{ github.event.inputs.BUILD_PARTITION }}-${{ github.run_id }}.img"
-          if [ -f "$IMG_PATH" ]; then
-            cp "$IMG_PATH" "artifacts/$OUTPUT_NAME"
-            echo "========================================"
-            echo "  Build successful!"
-            echo "  Output: artifacts/$OUTPUT_NAME"
-            echo "  Size: $(du -h "artifacts/$OUTPUT_NAME" | cut -f1)"
-            echo "========================================"
-          else
-            echo "Error: Build output not found at $IMG_PATH"
-            exit 1
-          fi
+          cp "out/target/product/${{ github.event.inputs.DEVICE_NAME }}/${{ github.event.inputs.BUILD_PARTITION }}.img" \
+             "artifacts/TWRP-3.7.1-16-${{ github.event.inputs.DEVICE_NAME }}-${{ github.event.inputs.BUILD_PARTITION }}-${{ github.run_id }}.img"
+
       - name: Upload build log
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: TWRP-build-log-${{ github.run_id }}
           path: artifacts/build.log
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: TWRP-3.7.1-16-${{ github.event.inputs.DEVICE_NAME }}-${{ github.event.inputs.BUILD_PARTITION }}-${{ github.run_id }}
           path: artifacts/*.img
+
       - name: Upload to Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: twrp-${{ github.event.inputs.DEVICE_NAME }}-${{ github.event.inputs.BUILD_PARTITION }}-${{ github.run_id }}
-          name: TWRP 3.7.1-16 ${{ github.event.inputs.DEVICE_NAME }} ${{ github.event.inputs.BUILD_PARTITION }}
+          name: TWRP 3.7.1-16 ${{ github.event.inputs.DEVICE_NAME }} ${{ github.event.inputs.BUILD_PARTITION }} ${{ github.run_id }}
           files: artifacts/*.img
-          body: |
-            ## TWRP Build Output
-            
-            - **Device**: ${{ github.event.inputs.DEVICE_NAME }}
-            - **Partition**: ${{ github.event.inputs.BUILD_PARTITION }}
-            - **Version**: TWRP 3.7.1-16 (Android 16)
-            - **TWRP Branch**: ${{ github.event.inputs.TWRP_MANIFEST_BRANCH }}
-            - **Build**: GitHub Actions automatic build
-            
-            > Auto-generated build. Please backup data before flashing.
