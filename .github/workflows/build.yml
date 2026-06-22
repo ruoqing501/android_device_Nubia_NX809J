@@ -121,7 +121,7 @@ jobs:
           git config --global pack.packSizeLimit "256m"
           git config --global core.deltaBaseCacheLimit "128m"
           repo init --depth=1 -u "${{ github.event.inputs.TWRP_MANIFEST_URL }}" -b "${{ github.event.inputs.TWRP_MANIFEST_BRANCH }}"
-          repo sync -c --force-sync --no-clone-bundle --no-tags -j2 &
+          repo sync -c --force-sync --no-clone-bundle --no-tags -j1 &
           sync_pid=$!
           (
             while kill -0 "${sync_pid}" 2>/dev/null; do
