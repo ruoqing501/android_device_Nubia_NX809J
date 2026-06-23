@@ -94,6 +94,8 @@ on boot
     chmod 0644 /lib/firmware/haptic_ram.bin
 
     chmod 0644 /lib/firmware/awinic_haptic_params.bin
+
 	chmod 0644 /lib/firmware/spu_rpmb.mbn
+	chmod 0644 /lib/firmware/spu_service.mbn
 
 
