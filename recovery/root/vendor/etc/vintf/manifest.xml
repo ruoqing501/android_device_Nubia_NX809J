@@ -1,13 +1,20 @@
-<!--
-    Input:
-        device/qcom/sun/manifest_sun.xml
--->
-<manifest version="4.0" type="device" target-level="202404">
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest version="2.0" type="device" target-level="8">
+    <hal format="aidl">
+        <name>android.hardware.security.keymint</name>
+        <fqname>IKeyMintDevice/default</fqname>
+    </hal>
     <hal format="aidl">
         <name>android.hardware.gatekeeper</name>
         <fqname>IGatekeeper/default</fqname>
     </hal>
-    <sepolicy>
-       <version>202504</version>
-    </sepolicy>
+    <hal format="aidl">
+        <name>android.hardware.secure_element</name>
+        <fqname>ISecureElement/SIM1</fqname>
+        <fqname>ISecureElement/SIM2</fqname>
+    </hal>
+    <hal format="aidl">
+        <name>android.hardware.nfc</name>
+        <fqname>INfc/default</fqname>
+    </hal>
 </manifest>
