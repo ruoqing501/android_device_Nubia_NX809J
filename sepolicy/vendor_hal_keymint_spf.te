@@ -1,15 +1,3 @@
-# ========== Device types (need explicit declaration) ==========
-type smcinvoke_device, dev_type;
-type tee_device, dev_type;
-type qseecom_device, dev_type;
-type dmabuf_heap_device, dev_type;
-
-# ========== Service manager types ==========
-type hal_keymint_service, service_manager_type;
-type hal_weaver_service, service_manager_type;
-type hal_gatekeeper_service, service_manager_type;
-type keystore_service, service_manager_type;
-
 # ========== SPU KeyMint HAL ==========
 type vendor_hal_keymint_spu_qti_exec, exec_type, file_type, vendor_file_type;
 type vendor_hal_keymint_spu_qti, domain;
