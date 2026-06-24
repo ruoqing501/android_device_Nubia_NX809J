@@ -1,0 +1,9 @@
+# SPU HAL Executables
+/vendor/bin/hw/android\.hardware\.security\.keymint-service-spu-qti    u:object_r:vendor_hal_keymint_spu_qti_exec:s0
+/vendor/bin/hw/android\.hardware\.weaver-service-spu-qti                u:object_r:vendor_hal_weaver_spu_qti_exec:s0
+/vendor/bin/hw/android\.hardware\.gatekeeper-service-spu-qti            u:object_r:vendor_hal_gatekeeper_spu_qti_exec:s0
+
+# SPU Firmware Files
+/lib/firmware/spu_rpmb\.mbn     u:object_r:firmware_file:s0
+/lib/firmware/spu_service\.mbn   u:object_r:firmware_file:s0
+/vendor/firmware/spu_.*\.mbn     u:object_r:firmware_file:s0

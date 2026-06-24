@@ -1,0 +1,36 @@
+# SPU KeyMint HAL
+type vendor_hal_keymint_spu_qti_exec, exec_type, file_type, vendor_file_type;
+type vendor_hal_keymint_spu_qti, domain;
+
+init_daemon_domain(vendor_hal_keymint_spu_qti)
+
+allow vendor_hal_keymint_spu_qti smcinvoke_device:chr_file { read write open ioctl };
+allow vendor_hal_keymint_spu_qti tee_device:chr_file { read write open ioctl };
+allow vendor_hal_keymint_spu_qti dmabuf_heap_device:chr_file { read open ioctl };
+allow vendor_hal_keymint_spu_qti hal_keymint_service:service_manager { add find };
+allow vendor_hal_keymint_spu_qti hal_weaver_service:service_manager find;
+allow vendor_hal_keymint_spu_qti hal_gatekeeper_service:service_manager find;
+allow vendor_hal_keymint_spu_qti keystore_service:service_manager find;
+allow vendor_hal_keymint_spu_qti self:capability { sys_rawio };
+allow vendor_hal_keymint_spu_qti firmware_file:file { read open };
+
+# SPU Weaver HAL
+type vendor_hal_weaver_spu_qti_exec, exec_type, file_type, vendor_file_type;
+type vendor_hal_weaver_spu_qti, domain;
+
+init_daemon_domain(vendor_hal_weaver_spu_qti)
+
+allow vendor_hal_weaver_spu_qti smcinvoke_device:chr_file { read write open ioctl };
+allow vendor_hal_weaver_spu_qti hal_weaver_service:service_manager { add find };
+allow vendor_hal_weaver_spu_qti hal_keymint_service:service_manager find;
+allow vendor_hal_weaver_spu_qti firmware_file:file { read open };
+
+# SPU Gatekeeper HAL
+type vendor_hal_gatekeeper_spu_qti_exec, exec_type, file_type, vendor_file_type;
+type vendor_hal_gatekeeper_spu_qti, domain;
+
+init_daemon_domain(vendor_hal_gatekeeper_spu_qti)
+
+allow vendor_hal_gatekeeper_spu_qti smcinvoke_device:chr_file { read write open ioctl };
+allow vendor_hal_gatekeeper_spu_qti hal_gatekeeper_service:service_manager { add find };
+allow vendor_hal_gatekeeper_spu_qti firmware_file:file { read open };

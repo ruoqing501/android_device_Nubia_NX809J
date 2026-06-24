@@ -9,7 +9,7 @@ service vendor.keymint-qti /vendor/bin/hw/android.hardware.security.keymint-serv
     class early_hal
     user root
     group root drmrpc
-    seclabel u:r:recovery:s0
+    seclabel u:r:vendor_hal_keymint_spu_qti:s0
 
 on property:vendor.car.hiber=hiberExit
     stop vendor.keymint-qti

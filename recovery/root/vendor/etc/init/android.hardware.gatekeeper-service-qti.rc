@@ -7,7 +7,7 @@ service vendor.gatekeeper_default /vendor/bin/hw/android.hardware.gatekeeper-ser
     user root
     group root
     disabled
-    seclabel u:r:recovery:s0
+    seclabel u:r:vendor_hal_gatekeeper_spu_qti:s0
 
 on property:vendor.gatekeeper.is_security_level_spu=0
     enable vendor.gatekeeper_default

@@ -2,4 +2,4 @@ service vendor.weaver-service /vendor/bin/hw/android.hardware.weaver-service-spu
     class hal
     user root
     group nfc root
-    seclabel u:r:recovery:s0
+    seclabel u:r:vendor_hal_weaver_spu_qti:s0

@@ -195,3 +195,6 @@ WPA_SUPPLICANT_VERSION := VER_0_8_X
 
 TW_LOAD_VENDOR_MODULES := "kmparam.ko panel_event_notifier.ko zte_tpd.ko"
 TW_LOAD_VENDOR_MODULES_EXCLUDE_GKI := true
+
+# Sepolicy for SPU HAL
+BOARD_SEPOLICY_DIRS += $(DEVICE_PATH)/sepolicy

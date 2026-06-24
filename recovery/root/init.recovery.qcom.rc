@@ -34,6 +34,29 @@ on init
 on early-init
     start vendor.gatekeeper_default
 
+# ========== SPU HAL Service Definitions ==========
+service vendor.gatekeeper_default /vendor/bin/hw/android.hardware.gatekeeper-service-spu-qti
+    class early_hal
+    user root
+    group root
+    seclabel u:r:vendor_hal_gatekeeper_spu_qti:s0
+    interface android.hardware.gatekeeper.IGatekeeper default
+
+service vendor.keymint-strongbox /vendor/bin/hw/android.hardware.security.keymint-service-spu-qti
+    class early_hal
+    user root
+    group root drmrpc
+    seclabel u:r:vendor_hal_keymint_spu_qti:s0
+    interface android.hardware.security.keymint.IKeyMintDevice strongbox
+
+service vendor.weaver-service /vendor/bin/hw/android.hardware.weaver-service-spu-qti
+    class early_hal
+    user root
+    group root drmrpc
+    seclabel u:r:vendor_hal_weaver_spu_qti:s0
+    interface android.hardware.weaver.IWeaver default
+# ================================================
+
 service post-boot-script /system/bin/sh -c /vendor/bin/init.kernel.post_boot-canoe_default_6_2.sh
     user root
     group root
@@ -97,5 +120,3 @@ on boot
 
 	chmod 0644 /lib/firmware/spu_rpmb.mbn
 	chmod 0644 /lib/firmware/spu_service.mbn
-
-
