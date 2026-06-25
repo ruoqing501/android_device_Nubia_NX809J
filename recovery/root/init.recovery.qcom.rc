@@ -34,41 +34,18 @@ on init
 on early-init
     start vendor.gatekeeper_default
 
-# ========== SPU HAL Service Definitions ==========
-service vendor.gatekeeper_default /vendor/bin/hw/android.hardware.gatekeeper-service-spu-qti
-    class early_hal
-    user root
-    group root
-    seclabel u:r:vendor_hal_gatekeeper_spu_qti:s0
-    interface android.hardware.gatekeeper.IGatekeeper default
-
-service vendor.keymint-strongbox /vendor/bin/hw/android.hardware.security.keymint-service-spu-qti
-    class early_hal
-    user root
-    group root drmrpc
-    seclabel u:r:vendor_hal_keymint_spu_qti:s0
-    interface android.hardware.security.keymint.IKeyMintDevice strongbox
-
-service vendor.weaver-service /vendor/bin/hw/android.hardware.weaver-service-spu-qti
-    class early_hal
-    user root
-    group root drmrpc
-    seclabel u:r:vendor_hal_weaver_spu_qti:s0
-    interface android.hardware.weaver.IWeaver default
-# ================================================
-
 service post-boot-script /system/bin/sh -c /vendor/bin/init.kernel.post_boot-canoe_default_6_2.sh
     user root
     group root
     oneshot
     seclabel u:r:recovery:s0
-	
+
 service unbind_inputs /system/bin/sh /system/bin/unbind_inputs.sh
     user root
     group root
     oneshot
     seclabel u:r:recovery:s0
-	
+
 on init
     write /sys/class/backlight/panel0-backlight/brightness 200
     setprop sys.usb.configfs 1
@@ -85,7 +62,7 @@ on fs
     wait /dev/block/platform/soc/${ro.boot.bootdevice}
     symlink /dev/block/platform/soc/${ro.boot.bootdevice} /dev/block/bootdevice
     write /proc/sys/kernel/firmware_config/force_sysfs_fallback 1
-   
+
 on property:twrp.modules.loaded=true
     # Mount firmware
     mkdir /firmware
@@ -105,7 +82,7 @@ on property:hwservicemanager.ready=true
 
 on property:vendor.sys.listeners.registered=true
     start vendor.keymint-strongbox
-	
+
 # Touch drivers    
 chmod 0644 /firmware/syna_firmware.img
 
