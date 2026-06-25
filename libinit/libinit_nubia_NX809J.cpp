@@ -68,50 +68,23 @@ void SetupModelProperties(const ModelInfo& info) {
     }
 }
 
-static std::string ReadBuildPropKey(const std::string& path, const std::string& key) {
-    std::ifstream file(path);
-    if (!file.is_open()) return "";
-
-    std::string line;
-    while (std::getline(file, line)) {
-        if (line.find(key + "=") == 0) {
-            return line.substr(key.length() + 1);
-        }
-    }
-    return "";
-}
-
-static std::string DetectDeviceFromVendor() {
-    bool mounted = false;
-    if (mount("/dev/block/by-name/vendor", "/vendor", "ext4", MS_RDONLY, "") == 0) {
-        mounted = true;
-    } else if (mount("/dev/block/by-name/vendor", "/vendor", "erofs", MS_RDONLY, "") == 0) {
-        mounted = true;
-    } else if (mount("/dev/block/by-name/vendor", "/vendor", "f2fs", MS_RDONLY, "") == 0) {
-        mounted = true;
-    }
-
-    if (!mounted && access("/vendor/build.prop", F_OK) != 0) {
-        return "NX809J";
-    }
-
-    std::string model = ReadBuildPropKey("/vendor/build.prop", "ro.product.model");
-    if (model.empty()) {
-        model = ReadBuildPropKey("/vendor/build.prop", "ro.product.vendor.model");
-    }
-
-    if (model.find("NX741J") != std::string::npos) {
-        return "NX741J";
-    }
-    if (model.find("NX809J") != std::string::npos) {
-        return "NX809J";
-    }
-
-    return "NX809J";
-}
-
 void vendor_load_properties() {
-    std::string sku = DetectDeviceFromVendor();
+    std::string sku = GetProperty("ro.boot.hardware.sku", "");
+    if (sku.empty()) {
+        sku = GetProperty("ro.boot.project_name", "");
+    }
+    if (sku.empty()) {
+        sku = GetProperty("ro.boot.board_id", "");
+    }
+    if (sku.empty()) {
+        sku = "DEFAULT";
+    }
+
     auto model_info = kModelInfoMap.find(sku);
+    if (model_info == kModelInfoMap.end()) {
+        LOG(ERROR) << "Unknown ZTE/Nubia SKU: '" << sku << "', falling back to default NX809J profile";
+        model_info = kModelInfoMap.find("NX809J");
+    }
+
     SetupModelProperties(model_info->second);
 }
