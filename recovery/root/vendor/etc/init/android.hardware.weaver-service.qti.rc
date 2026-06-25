@@ -1,3 +1,7 @@
+# Delay start until qseecomd is ready (sync with gatekeeper trigger)
+on property:vendor.gatekeeper.is_security_level_spu=0
+    start vendor.weaver-service
+
 service vendor.weaver-service /vendor/bin/hw/android.hardware.weaver-service-spu-qti
     class hal
     user root

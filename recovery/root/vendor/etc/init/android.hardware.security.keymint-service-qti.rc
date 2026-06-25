@@ -2,7 +2,8 @@
 # All Rights Reserved.
 # Confidential and Proprietary - Qualcomm Technologies, Inc.
 
-on init
+# Delay start until qseecomd is ready (sync with gatekeeper trigger)
+on property:vendor.gatekeeper.is_security_level_spu=0
     start vendor.keymint-qti
 
 service vendor.keymint-qti /vendor/bin/hw/android.hardware.security.keymint-service-spu-qti
