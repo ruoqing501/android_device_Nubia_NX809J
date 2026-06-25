@@ -3,7 +3,6 @@
 ## Supported devices
 
 - REDMAGIC 11 Pro
-- ZTE Z80 Ultra
 
 ## Build
 
